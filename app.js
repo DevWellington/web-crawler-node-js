@@ -1,6 +1,17 @@
 require('dotenv').config()
 const axios = require('axios')
 const cheerio = require('cheerio')
+const express = require('express')
+const morgan = require('morgan');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+
+const app = express()
+
+app.use(morgan('dev'))
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
+app.use(cors())
 
 function getHTML() {
     try {
@@ -34,7 +45,7 @@ function convertHTML(html) {
             'price': parseFloat($(element).find('.card-content a .card-price').text().trim().replace('R$ ','')),
             'version': $(element).find('.card-content .card-info .card-subtitle span').text().trim(),
             'vendorType': $(element).find('.card-content .card-info .card-owner-label').text().trim(),
-            'year': $(element).find('.card-content .card-info .card-features .list-features li[title="Ano de fabricação"]').text().trim(),
+            'year': $(element).find('.card-content .card-info .card-features .list-features li[title="Ano de fabricação"]').text().trim().split('-'),
             'km': parseFloat($(element).find('.card-content .card-info .card-features .list-features li[title="Kilometragem atual"]').text().trim().replace(' km','')),
             'shift': $(element).find('.card-content .card-info .card-features .list-features li[title="Tipo de câmbio"]').text().trim(),
             'list': $(element).find('.card-content .card-info .card-features .list-inline li').map((i, e) =>
@@ -52,11 +63,17 @@ async function main() {
     try {
         const html = await getHTML()
         const result = await convertHTML(html)
+
+        app.get('/', (req, res) => {
+            return res.json({result})
+        })
         
-        console.log(result)        
+        console.log(result)
     } catch (error) {
         console.error('Error: ', error)
     }
 }
 
 main()
+
+app.listen(9000, () => console.log('Express started at http://localhost:9000'));
